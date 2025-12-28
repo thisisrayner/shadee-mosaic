@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shadee.Care: Project MosAIc | Internal Explorer</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0e14;
+            --accent-color: #6366f1;
+            --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .ambient-glow {
+            position: fixed;
+            top: -20%;
+            right: -10%;
+            width: 50%;
+            height: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(11, 14, 20, 0) 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+
+        p.subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .search-container {
+            position: relative;
+            margin-bottom: 3rem;
+        }
+
+        #queryInput {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            padding: 1.5rem 8rem 1.5rem 2.5rem;
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            backdrop-filter: blur(12px);
+            outline: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        #queryInput:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1), 0 10px 40px rgba(0, 0, 0, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .search-controls {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 2.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.5rem 1.25rem;
+            border-radius: 2rem;
+            border: 1px solid var(--glass-border);
+            position: relative;
+        }
+
+        .tooltip-icon {
+            cursor: help;
+            opacity: 0.4;
+            transition: opacity 0.2s;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--text-secondary);
+            border-radius: 50%;
+        }
+
+        .tooltip-icon:hover {
+            opacity: 1;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 220px;
+            background-color: #1e293b;
+            color: #fff;
+            text-align: center;
+            border-radius: 0.75rem;
+            padding: 0.75rem;
+            position: absolute;
+            z-index: 100;
+            bottom: 150%;
+            left: 50%;
+            margin-left: -110px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        .tooltip .tooltiptext::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #1e293b transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .toggle-switch input {
+            display: none;
+        }
+
+        .toggle-slider {
+            width: 34px;
+            height: 20px;
+            background: #334155;
+            border-radius: 20px;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .toggle-slider:before {
+            content: "";
+            position: absolute;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            top: 3px;
+            left: 3px;
+            transition: 0.3s;
+        }
+
+        input:checked+.toggle-slider {
+            background: var(--accent-color);
+        }
+
+        input:checked+.toggle-slider:before {
+            transform: translateX(14px);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+        }
+
+        .tab {
+            padding: 0.5rem 1.5rem;
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-weight: 600;
+            transition: all 0.2s;
+            border-radius: 0.75rem;
+            position: relative;
+        }
+
+        .tab.active {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab.active::after {
+            content: "";
+            position: absolute;
+            bottom: -0.6rem;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-gradient);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        #synthesis-container {
+            background: rgba(99, 102, 241, 0.03);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            line-height: 1.8;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #synthesis-container::before {
+            content: "AI INSIGHTS";
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 0.65rem;
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            color: var(--accent-color);
+            opacity: 0.5;
+        }
+
+        .tier-pill {
+            padding: 0.2rem 0.6rem;
+            border-radius: 0.5rem;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+
+        .tier-llm {
+            background: rgba(99, 102, 241, 0.2);
+            color: #a5b4fc;
+            border: 1px solid rgba(99, 102, 241, 0.3);
+        }
+
+        .tier-regex {
+            background: rgba(148, 163, 184, 0.1);
+            color: #94a3b8;
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .follow-up-box {
+            margin-top: 2.5rem;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .follow-up-box input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            padding: 1rem 1.5rem;
+            border-radius: 1rem;
+            color: var(--text-primary);
+            outline: none;
+        }
+
+        .follow-up-box input:focus {
+            border-color: var(--accent-color);
+        }
+
+        button.search-btn {
+            position: absolute;
+            right: 0.75rem;
+            top: 0.75rem;
+            bottom: 0.75rem;
+            padding: 0 2rem;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 1rem;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s ease;
+        }
+
+        button.search-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Result Card Tooltips */
+        .similarity-badge {
+            position: relative;
+        }
+
+        .similarity-badge .tooltiptext {
+            visibility: hidden;
+            width: 100px;
+            background-color: #1e293b;
+            color: #fff;
+            text-align: center;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -50px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.7rem;
+            border: 1px solid var(--glass-border);
+            pointer-events: none;
+        }
+
+        .similarity-badge:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        #results {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+            animation: slideUp 0.5s ease forwards;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: scale(1.01);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .similarity-badge {
+            background: var(--accent-gradient);
+            padding: 0.25rem 0.75rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .platform-tag {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .content-body {
+            line-height: 1.6;
+            color: var(--text-primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: var(--text-secondary);
+        }
+
+        .loader {
+            display: none;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--accent-color);
+            margin: 2rem auto;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 2rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .modal-content {
+            background: #151921;
+            border: 1px solid var(--glass-border);
+            border-radius: 2rem;
+            width: 100%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes scaleUp {
+            from {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            position: sticky;
+            top: 0;
+            background: #151921;
+            z-index: 10;
+        }
+
+        .close-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 2rem;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--accent-color);
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+
+        .content-block {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .meta-item {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--glass-border);
+        }
+
+        .meta-value {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+
+        .meta-key {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+            display: block;
+        }
+
+        .warning-box {
+            background: rgba(245, 158, 11, 0.05);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.8rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient-glow"></div>
+
+    <div class="container">
+        <header>
+            <h1>Shadee.Care: Project MosAIc</h1>
+            <p class="subtitle">INTERNAL BRAIN EXPLORER</p>
+        </header>
+
+        <div class="search-container">
+            <input type="text" id="queryInput" placeholder="Describe a theme (e.g. academic stress among youth)..."
+                autocomplete="off">
+            <button class="search-btn" onclick="handleSearch()">Search</button>
+        </div>
+
+        <div class="search-controls">
+            <label class="toggle-switch">
+                <input type="checkbox" id="aiOnlyToggle" checked>
+                <div class="toggle-slider"></div>
+                <span id="toggleLabel" style="font-size: 0.8rem;">Verified posts only</span>
+            </label>
+            <div class="tooltip">
+                <span class="tooltip-icon">i</span>
+                <span class="tooltiptext">
+                    <strong>ON:</strong> Only show high-fidelity AI verified narratives.<br>
+                    <strong>OFF:</strong> Include all records including baseline Regex results.
+                </span>
+            </div>
+        </div>
+
+        <div class="loader" id="loader"></div>
+
+        <div id="results-area" style="display: none;">
+            <div class="tabs">
+                <div class="tab active" onclick="switchTab('synthesis')">AI Synthesis</div>
+                <div class="tab" onclick="switchTab('evidence')">Evidence Audit</div>
+            </div>
+
+            <!-- Tab 1: Synthesis -->
+            <div id="synthesis-tab" class="tab-content active">
+                <div id="synthesis-container">
+                    <div id="synthesis-text">Generating insights...</div>
+
+                    <div class="follow-up-box" id="follow-up-ui" style="display: none;">
+                        <input type="text" id="followUpInput" placeholder="Ask a follow-up about these insights...">
+                        <button class="search-btn" style="position:static; padding: 0.75rem 1.5rem;"
+                            onclick="handleFollowUp()">Ask</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Evidence -->
+            <div id="evidence-tab" class="tab-content">
+                <div id="results"></div>
+            </div>
+        </div>
+
+        <div id="initial-state" class="empty-state">Enter a query to explore the narratives...</div>
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <span id="modalPlatform" class="platform-tag">PLATFORM</span>
+                    <h2 id="modalHeaderTitle" style="margin-top: 0.5rem;">Post Details</h2>
+                </div>
+                <button class="close-btn" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <span class="section-label">Anonymized Narrative</span>
+                <div id="modalContentScrubbed" class="content-block"></div>
+
+                <div class="warning-box">
+                    <span>⚠️</span>
+                    <span><strong>Internal Only:</strong> Original content shown below may contain PII. Handle with
+                        clinical discretion.</span>
+                </div>
+
+                <span class="section-label">Original Content</span>
+                <div id="modalContentOriginal" class="content-block" style="color: var(--text-secondary);"></div>
+
+                <span class="section-label">Classification Metadata</span>
+                <div class="meta-grid">
+                    <div class="meta-item">
+                        <span class="meta-key">Post Date</span>
+                        <div id="metaDate" class="meta-value">N/A</div>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-key">Classification Tier</span>
+                        <div id="metaTier" class="meta-value">N/A</div>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-key">Confidence Score</span>
+                        <div id="metaSimilarity" class="meta-value">N/A</div>
+                    </div>
+                    <div class="meta-item" style="grid-column: 1 / -1;">
+                        <span class="meta-key">AI Explanation (if available)</span>
+                        <div id="metaAiExplanation" class="meta-value" style="font-weight: 400; line-height: 1.5;">N/A
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const queryInput = document.getElementById('queryInput');
+        const resultsContainer = document.getElementById('results');
+        const loader = document.getElementById('loader');
+        const modal = document.getElementById('detailModal');
+        const resultsArea = document.getElementById('results-area');
+        const initialState = document.getElementById('initial-state');
+        const synthesisText = document.getElementById('synthesis-text');
+        const aiOnlyToggle = document.getElementById('aiOnlyToggle');
+        const toggleLabel = document.getElementById('toggleLabel');
+
+        let currentResults = [];
+        let currentSynthesis = "";
+
+        aiOnlyToggle.addEventListener('change', () => {
+            toggleLabel.textContent = aiOnlyToggle.checked ? "Verified posts only" : "Include all posts";
+        });
+
+        queryInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleSearch();
+        });
+
+        document.getElementById('followUpInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleFollowUp();
+        });
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            if (tab === 'synthesis') {
+                document.querySelector('.tab:nth-child(1)').classList.add('active');
+                document.getElementById('synthesis-tab').classList.add('active');
+            } else {
+                document.querySelector('.tab:nth-child(2)').classList.add('active');
+                document.getElementById('evidence-tab').classList.add('active');
+            }
+        }
+
+        async function handleSearch() {
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            // Reset UI
+            initialState.style.display = 'none';
+            resultsArea.style.display = 'none';
+            loader.style.display = 'block';
+            resultsContainer.innerHTML = '';
+            synthesisText.innerHTML = 'Generating insights...';
+            document.getElementById('follow-up-ui').style.display = 'none';
+            switchTab('synthesis');
+
+            try {
+                // 1. Fetch Search Results
+                const searchResp = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query,
+                        limit: 12,
+                        threshold: 0.3,
+                        ai_only: aiOnlyToggle.checked
+                    })
+                });
+
+                if (!searchResp.ok) throw new Error('Search failed');
+                const results = await searchResp.json();
+                currentResults = results;
+
+                if (results.length === 0) {
+                    loader.style.display = 'none';
+                    resultsArea.style.display = 'block';
+                    synthesisText.innerHTML = 'No matching narratives found to synthesize.';
+                    resultsContainer.innerHTML = '<div class="empty-state">No matching results.</div>';
+                    return;
+                }
+
+                renderResults(results);
+                resultsArea.style.display = 'block';
+                loader.style.display = 'none';
+
+                // 2. Fetch Synthesis
+                const synthResp = await fetch('/api/summarize', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ results, query })
+                });
+
+                if (synthResp.ok) {
+                    const synthData = await synthResp.json();
+                    currentSynthesis = synthData.synthesis;
+                    formatSynthesis(currentSynthesis, synthesisText);
+                    document.getElementById('follow-up-ui').style.display = 'flex';
+                }
+
+            } catch (error) {
+                console.error("Critical Error:", error);
+                loader.style.display = 'none';
+                initialState.innerHTML = `<div style="color: #ef4444;">Error: ${error.message}</div>`;
+                initialState.style.display = 'block';
+            }
+        }
+
+        function renderResults(data) {
+            resultsContainer.innerHTML = '';
+            data.forEach((item, index) => {
+                const card = document.createElement('div');
+                card.className = 'result-card';
+                card.style.animationDelay = `${index * 0.05}s`;
+                card.onclick = () => openModal(item.id);
+
+                const isAi = !!item.ai_explanation;
+                const score = (item.similarity * 100).toFixed(1);
+
+                // Qualitative Label Mapping
+                let relevanceLabel = "Potential Link";
+                if (item.similarity >= 0.70) relevanceLabel = "Top Match";
+                else if (item.similarity >= 0.55) relevanceLabel = "Highly Relevant";
+                else if (item.similarity >= 0.45) relevanceLabel = "Relevant";
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="platform-tag">${item.platform}</span>
+                        <div style="display:flex; gap: 0.5rem; align-items:center;">
+                            <span class="tier-pill ${isAi ? 'tier-llm' : 'tier-regex'}">${isAi ? 'LLM Tier 2' : 'Regex Tier 1'}</span>
+                            <span class="similarity-badge">
+                                ${relevanceLabel}
+                                <span class="tooltiptext">Match Score: ${score}%</span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="content-body">
+                        ${item.content_scrubbed ? item.content_scrubbed.substring(0, 180) + '...' : '[No Content]'}
+                    </div>
+                `;
+                resultsContainer.appendChild(card);
+            });
+        }
+
+        async function handleFollowUp() {
+            const q = document.getElementById('followUpInput').value.trim();
+            if (!q) return;
+
+            const originalBtnText = "Ask";
+            const btn = document.querySelector('#follow-up-ui button');
+            btn.textContent = "...";
+            btn.disabled = true;
+
+            try {
+                const resp = await fetch('/api/follow-up', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: q,
+                        context: currentSynthesis,
+                        results: currentResults
+                    })
+                });
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const followUpDiv = document.createElement('div');
+                    followUpDiv.style.marginTop = '2rem';
+                    followUpDiv.style.paddingTop = '2rem';
+                    followUpDiv.style.borderTop = '1px solid var(--glass-border)';
+
+                    const responseTitle = document.createElement('div');
+                    responseTitle.style.cssText = "color: var(--accent-color); font-size: 0.7rem; font-weight: 800; margin-bottom: 1rem;";
+                    responseTitle.textContent = "FOLLOW-UP RESPONSE";
+                    followUpDiv.appendChild(responseTitle);
+
+                    const responseContent = document.createElement('div');
+                    formatSynthesis(data.answer, responseContent);
+                    followUpDiv.appendChild(responseContent);
+
+                    synthesisText.appendChild(followUpDiv);
+                    document.getElementById('follow-up-ui').style.display = 'none'; // Only one follow-up per design
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                btn.textContent = originalBtnText;
+                btn.disabled = false;
+            }
+        }
+
+        function openModal(id) {
+            const item = currentResults.find(r => String(r.id) === String(id));
+            if (!item) return;
+
+            const isAi = !!item.ai_explanation;
+            document.getElementById('modalPlatform').textContent = item.platform;
+            document.getElementById('modalHeaderTitle').textContent = `Narrative ${item.id.substring(0, 8)}`;
+            document.getElementById('modalContentScrubbed').textContent = item.content_scrubbed || "";
+            document.getElementById('modalContentOriginal').textContent = item.content || "";
+            document.getElementById('metaDate').textContent = item.post_dt ? new Date(item.post_dt).toLocaleDateString() : 'Unknown';
+            document.getElementById('metaTier').textContent = isAi ? 'LLM Tier 2 (Optimized)' : 'Regex Tier 1 (Baseline)';
+            document.getElementById('metaSimilarity').textContent = `${(item.similarity * 100).toFixed(1)}%`;
+            document.getElementById('metaAiExplanation').textContent = item.ai_explanation || 'No detailed AI analysis available for this record yet.';
+
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            modal.style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+
+        function formatSynthesis(text, container) {
+            // Split by lines and handle bolding/bullets
+            const lines = text.split('\n');
+            let html = '';
+            let inList = false;
+
+            lines.forEach(line => {
+                let cleanLine = line.trim();
+                if (!cleanLine) {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    html += '<br>';
+                    return;
+                }
+
+                // Handle Bold (must do before bullets to avoid escaping stars)
+                cleanLine = cleanLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+                // Handle Bullet Points
+                if (cleanLine.startsWith('- ') || cleanLine.startsWith('* ') || /^\d+\.\s/.test(cleanLine)) {
+                    if (!inList) { html += '<ul style="margin-left: 1.5rem; margin-bottom: 1rem; list-style-type: disc;">'; inList = true; }
+                    const itemContent = cleanLine.replace(/^[-*]\s/, '').replace(/^\d+\.\s/, '');
+                    html += `<li style="margin-bottom: 0.5rem;">${itemContent}</li>`;
+                } else {
+                    if (inList) { html += '</ul>'; inList = false; }
+                    html += `<p style="margin-bottom: 1rem;">${cleanLine}</p>`;
+                }
+            });
+
+            if (inList) html += '</ul>';
+            container.innerHTML = html;
+        }
+    </script>
+</body>
+
+</html>
