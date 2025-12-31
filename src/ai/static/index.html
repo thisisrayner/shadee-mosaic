@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shadee.Care: Project MosAIc | Internal Explorer</title>
+    <title>Shade-Intelligence: Internal Brain Explorer</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@400;700&display=swap"
         rel="stylesheet">
@@ -61,6 +63,7 @@
             font-weight: 800;
             background: var(--accent-gradient);
             -webkit-background-clip: text;
+            background-clip: text;
             -webkit-text-fill-color: transparent;
             margin-bottom: 1rem;
             letter-spacing: -0.02em;
@@ -252,6 +255,50 @@
             display: block;
         }
 
+        /* Research Trace Animations */
+        .pulse-loader {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #6366f1;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+            }
+
+            70% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+            }
+
+            100% {
+                transform: scale(0.8);
+                box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+            }
+        }
+
+        #trace-logs {
+            max-height: 150px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(99, 102, 241, 0.3) transparent;
+        }
+
+        #trace-logs::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #trace-logs::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.3);
+            border-radius: 4px;
+        }
+
         #synthesis-container {
             background: rgba(99, 102, 241, 0.03);
             border: 1px solid rgba(99, 102, 241, 0.2);
@@ -292,6 +339,61 @@
             background: rgba(148, 163, 184, 0.1);
             color: #94a3b8;
             border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        #synthesis-text h1 {
+            font-size: 1.8rem;
+            margin: 2rem 0 1.25rem 0;
+            color: #a5b4fc;
+            font-weight: 700;
+        }
+
+        #synthesis-text h2 {
+            font-size: 1.4rem;
+            margin: 2.5rem 0 1rem 0;
+            color: #c7d2fe;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+        }
+
+        #synthesis-text p {
+            margin-bottom: 1.5rem;
+            line-height: 1.9;
+            color: #cbd5e1;
+        }
+
+        #synthesis-text ul,
+        #synthesis-text ol {
+            margin-bottom: 2rem;
+            padding-left: 1.5rem;
+            color: #cbd5e1;
+            list-style-type: none;
+        }
+
+        #synthesis-text li {
+            margin-bottom: 1rem;
+            line-height: 1.7;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        #synthesis-text li::before {
+            content: "•";
+            color: #6366f1;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        #synthesis-text strong {
+            color: #f8fafc;
+            font-weight: 600;
+        }
+
+        #synthesis-text br {
+            content: "";
+            display: block;
+            margin: 1rem 0;
         }
 
         .follow-up-box {
@@ -626,6 +728,19 @@
                     <strong>OFF:</strong> Include all records including baseline Regex results.
                 </span>
             </div>
+
+            <label class="toggle-switch" style="margin-left: 2rem;">
+                <input type="checkbox" id="sgOnlyToggle">
+                <div class="toggle-slider"></div>
+                <span id="sgToggleLabel" style="font-size: 0.8rem;">Whole DB</span>
+            </label>
+            <div class="tooltip">
+                <span class="tooltip-icon">i</span>
+                <span class="tooltiptext">
+                    <strong>ON:</strong> Show results from Singapore-based posts only.<br>
+                    <strong>OFF:</strong> Show results from the entire database (Global + SG).
+                </span>
+            </div>
         </div>
 
         <div class="loader" id="loader"></div>
@@ -634,12 +749,37 @@
             <div class="tabs">
                 <div class="tab active" onclick="switchTab('synthesis')">AI Synthesis</div>
                 <div class="tab" onclick="switchTab('evidence')">Evidence Audit</div>
+                <div class="tab" onclick="switchTab('protocol')">Protocol Trace</div>
             </div>
 
             <!-- Tab 1: Synthesis -->
             <div id="synthesis-tab" class="tab-content active">
-                <div id="synthesis-container">
-                    <div id="synthesis-text">Generating insights...</div>
+                <div id="trends-container"
+                    style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 1.5rem; margin-bottom: 2rem; display: none;">
+                    <h3 style="display: flex; align-items: center; margin-bottom: 1.5rem;">
+                        <span style="color: #6366f1;">Atmosphere Pulse</span>
+                        <span style="font-size: 0.8rem; font-weight: normal; opacity: 0.7;">(Last 180 Days)</span>
+                        <div class="tooltip" style="margin-left: auto;">
+                            <span class="tooltip-icon" style="width: 1rem; height: 1rem; font-size: 0.7rem;">?</span>
+                            <span class="tooltiptext">
+                                <strong>0-100 Index:</strong> Represents search interest relative to the highest point
+                                on the chart for the given region and time. A value of 100 is the peak popularity for
+                                the term.
+                            </span>
+                        </div>
+                    </h3>
+                    <div style="position: relative; height: 180px;">
+                        <canvas id="trendsChart"></canvas>
+                    </div>
+                </div>
+                <div id="ai-response" class="glass-container"
+                    style="padding: 2rem; min-height: 200px; position: relative;">
+                    <div id="research-trace"
+                        style="display: none; margin-bottom: 2rem; border-left: 2px solid #6366f1; padding-left: 1.5rem;">
+                        <div id="trace-logs"
+                            style="font-family: monospace; font-size: 0.85rem; color: #94a3b8; line-height: 1.6;"></div>
+                    </div>
+                    <div id="synthesis-text">Initiating research protocol...</div>
 
                     <div class="follow-up-box" id="follow-up-ui" style="display: none;">
                         <input type="text" id="followUpInput" placeholder="Ask a follow-up about these insights...">
@@ -651,7 +791,16 @@
 
             <!-- Tab 2: Evidence -->
             <div id="evidence-tab" class="tab-content">
+                <div id="stats-banner-container"></div>
                 <div id="results"></div>
+            </div>
+
+            <!-- Tab 3: Protocol -->
+            <div id="protocol-tab" class="tab-content">
+                <div id="protocol-log"
+                    style="font-family: 'Fira Code', monospace; font-size: 0.85rem; background: #000; border: 1px solid #333; height: 600px; overflow-y: auto; padding: 1.5rem; border-radius: 1rem; color: #94a3b8; line-height: 1.6;">
+                    <div style="color: #6d6d6d;">> Awaiting clinical protocol initiation...</div>
+                </div>
             </div>
         </div>
 
@@ -715,6 +864,8 @@
         const synthesisText = document.getElementById('synthesis-text');
         const aiOnlyToggle = document.getElementById('aiOnlyToggle');
         const toggleLabel = document.getElementById('toggleLabel');
+        const sgOnlyToggle = document.getElementById('sgOnlyToggle');
+        const sgToggleLabel = document.getElementById('sgToggleLabel');
 
         let currentResults = [];
         let currentSynthesis = "";
@@ -722,6 +873,15 @@
         aiOnlyToggle.addEventListener('change', () => {
             toggleLabel.textContent = aiOnlyToggle.checked ? "Verified posts only" : "Include all posts";
         });
+
+        sgOnlyToggle.addEventListener('change', () => {
+            sgToggleLabel.textContent = sgOnlyToggle.checked ? "SG Posts only" : "Whole DB";
+            updateTrends();
+        });
+
+        // Initialize labels
+        toggleLabel.textContent = aiOnlyToggle.checked ? "Verified posts only" : "Include all posts";
+        sgToggleLabel.textContent = sgOnlyToggle.checked ? "SG Posts only" : "Whole DB";
 
         queryInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') handleSearch();
@@ -738,11 +898,97 @@
             if (tab === 'synthesis') {
                 document.querySelector('.tab:nth-child(1)').classList.add('active');
                 document.getElementById('synthesis-tab').classList.add('active');
-            } else {
+            } else if (tab === 'evidence') {
                 document.querySelector('.tab:nth-child(2)').classList.add('active');
                 document.getElementById('evidence-tab').classList.add('active');
+            } else if (tab === 'protocol') {
+                document.querySelector('.tab:nth-child(3)').classList.add('active');
+                document.getElementById('protocol-tab').classList.add('active');
             }
         }
+
+        let trendsChartInstance = null;
+        async function updateTrends() {
+            const container = document.getElementById('trends-container');
+            try {
+                const res = await fetch(`/api/trends?sg_only=${sgOnlyToggle.checked}`);
+                const { data } = await res.json();
+                if (!data || data.length === 0) {
+                    container.style.display = 'none';
+                    return;
+                }
+
+                container.style.display = 'block';
+                const ctx = document.getElementById('trendsChart').getContext('2d');
+
+                // Group by keyword and date
+                const keywords = ["anxiety", "depression", "mental health", "self care", "therapy"];
+                const colors = {
+                    'anxiety': '#6366f1',
+                    'depression': '#ec4899',
+                    'mental health': '#10b981',
+                    'self care': '#f59e0b',
+                    'therapy': '#8b5cf6'
+                };
+
+                // Prepare labels (dates)
+                const dates = [...new Set(data.map(d => d.date))].sort();
+
+                const datasets = keywords.map(kw => {
+                    const kwData = data.filter(d => d.keyword === kw);
+                    const values = dates.map(date => {
+                        const entry = kwData.find(d => d.date === date);
+                        return entry ? entry.score : null;
+                    });
+
+                    return {
+                        label: kw.charAt(0).toUpperCase() + kw.slice(1),
+                        data: values,
+                        borderColor: colors[kw],
+                        backgroundColor: colors[kw] + '22',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        pointRadius: 0
+                    };
+                });
+
+                if (trendsChartInstance) trendsChartInstance.destroy();
+
+                trendsChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: dates, datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: true, labels: { color: '#94a3b8', boxWidth: 10, font: { size: 10 } } } },
+                        scales: {
+                            x: {
+                                display: true,
+                                ticks: {
+                                    color: '#475569',
+                                    font: { size: 9 },
+                                    maxRotation: 0,
+                                    autoSkip: true,
+                                    maxTicksLimit: 6
+                                },
+                                grid: { display: false }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: '#475569', font: { size: 10 } },
+                                grid: { color: 'rgba(255,255,255,0.05)' }
+                            }
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Trends Error:", err);
+                container.style.display = 'none';
+            }
+        }
+
+        // Run on load
+        updateTrends();
 
         async function handleSearch() {
             const query = queryInput.value.trim();
@@ -758,27 +1004,99 @@
             switchTab('synthesis');
 
             try {
+                // Helper to check response status
+                const checkMock = async (res) => {
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.detail || 'API Error');
+                    }
+                    return res.json();
+                };
+
+                // 0. Fetch Stats (Parallel with Search)
+                const statsUrl = `/api/stats?ai_only=${aiOnlyToggle.checked}&sg_only=${sgOnlyToggle.checked}`;
+                const statsPromise = fetch(statsUrl).then(res => res.ok ? res.json() : { total_posts: 0 });
+
                 // 1. Fetch Search Results
-                const searchResp = await fetch('/api/search', {
+                const searchPromise = fetch('/api/search', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         query,
                         limit: 12,
                         threshold: 0.3,
-                        ai_only: aiOnlyToggle.checked
+                        ai_only: aiOnlyToggle.checked,
+                        sg_only: sgOnlyToggle.checked
                     })
-                });
+                }).then(checkMock);
 
-                if (!searchResp.ok) throw new Error('Search failed');
-                const results = await searchResp.json();
+                const [stats, searchResponse] = await Promise.all([statsPromise, searchPromise]);
+
+                const results = searchResponse.results;
+                const suggestion = searchResponse.suggestion;
+
+                // Handle Suggestion Bridge
+                const suggestionBox = document.getElementById('suggestion-bridge');
+                if (suggestion && results.length < 5) {
+                    if (!suggestionBox) {
+                        resultsContainer.insertAdjacentHTML('beforebegin', `
+                            <div id="suggestion-bridge" style="
+                                background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2));
+                                border: 1px solid rgba(99, 102, 241, 0.3);
+                                padding: 1.25rem;
+                                border-radius: 1rem;
+                                margin-bottom: 2rem;
+                                color: #e2e8f0;
+                                font-size: 0.95rem;
+                                display: flex;
+                                align-items: flex-start;
+                                gap: 1rem;">
+                                <div style="background: #6366f1; width: 2.5rem; height: 2.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <span style="font-size: 1.2rem;">💡</span>
+                                </div>
+                                <div>
+                                    <div style="font-weight: 600; color: #a5b4fc; margin-bottom: 0.25rem;">Intelligence Suggestion</div>
+                                    <div id="suggestion-text"></div>
+                                </div>
+                            </div>
+                        `);
+                    }
+                    document.getElementById('suggestion-text').textContent = suggestion;
+                    document.getElementById('suggestion-bridge').style.display = 'flex';
+                } else if (suggestionBox) {
+                    suggestionBox.style.display = 'none';
+                }
+
+                // Inject stats into Evidence Tab
+                let bannerCont = document.getElementById('stats-banner-container');
+                let statsCont = document.getElementById('stats-banner');
+                if (!statsCont) {
+                    statsCont = document.createElement('div');
+                    statsCont.id = 'stats-banner';
+                    statsCont.className = 'stats-banner';
+                    statsCont.style.cssText = `
+                        background: rgba(99, 102, 241, 0.1); 
+                        border: 1px solid rgba(99, 102, 241, 0.2); 
+                        padding: 1rem; 
+                        border-radius: 1rem; 
+                        margin-bottom: 2rem; 
+                        text-align: center; 
+                        color: #94a3b8; 
+                        font-size: 0.9rem;
+                    `;
+                    bannerCont.appendChild(statsCont);
+                }
+
+                const totalCount = stats.total_posts !== undefined ? stats.total_posts.toLocaleString() : "0";
+                statsCont.innerHTML = `Following results queried from <strong style="color: #6366f1;">${totalCount}</strong> datapoints.`;
+
                 currentResults = results;
 
                 if (results.length === 0) {
                     loader.style.display = 'none';
                     resultsArea.style.display = 'block';
                     synthesisText.innerHTML = 'No matching narratives found to synthesize.';
-                    resultsContainer.innerHTML = '<div class="empty-state">No matching results.</div>';
+                    resultsContainer.innerHTML = '<div class="empty-state">No matching results in current database.</div>';
                     return;
                 }
 
@@ -786,19 +1104,8 @@
                 resultsArea.style.display = 'block';
                 loader.style.display = 'none';
 
-                // 2. Fetch Synthesis
-                const synthResp = await fetch('/api/summarize', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ results, query })
-                });
-
-                if (synthResp.ok) {
-                    const synthData = await synthResp.json();
-                    currentSynthesis = synthData.synthesis;
-                    formatSynthesis(currentSynthesis, synthesisText);
-                    document.getElementById('follow-up-ui').style.display = 'flex';
-                }
+                // 2. Start Dynamic Research Flow
+                conductResearch(query, sgOnlyToggle.checked);
 
             } catch (error) {
                 console.error("Critical Error:", error);
@@ -806,6 +1113,99 @@
                 initialState.innerHTML = `<div style="color: #ef4444;">Error: ${error.message}</div>`;
                 initialState.style.display = 'block';
             }
+        }
+
+        async function conductResearch(query, sgOnly) {
+            const trace = document.getElementById('research-trace');
+            const logs = document.getElementById('trace-logs');
+            const synthesisText = document.getElementById('synthesis-text');
+            const followUpUI = document.getElementById('follow-up-ui');
+
+            trace.style.display = 'block';
+            trace.style.opacity = '1';
+            logs.innerHTML = '';
+            synthesisText.innerHTML = '<div class="pulse-loader"></div> Initiating research protocol...';
+            followUpUI.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/research', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, sg_only: sgOnly })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+
+                    for (const line of lines) {
+                        const trimmed = line.trim();
+                        if (trimmed.startsWith('data: ')) {
+                            try {
+                                const data = JSON.parse(trimmed.substring(6));
+                                handleResearchUpdate(data, logs, synthesisText);
+                            } catch (e) { console.error("Parse Error", e, trimmed); }
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Research Error:", err);
+                synthesisText.innerHTML = `<span style="color: #ef4444;">Research Protocol Failed: ${err.message}</span>`;
+            }
+        }
+
+        function handleResearchUpdate(data, logs, synthesisText) {
+            const protocolLog = document.getElementById('protocol-log');
+
+            if (data.phase === 'sampling' || data.phase === 'audit' || data.phase === 'synthesis') {
+                const entry = document.createElement('div');
+                entry.style.borderBottom = "1px solid rgba(255,255,255,0.03)";
+                entry.style.padding = "4px 0";
+                entry.innerHTML = `> ${data.status} <span style="color: #6366f1;">[N=${data.n || '?'}]</span>`;
+                logs.appendChild(entry);
+                logs.scrollTop = logs.scrollHeight;
+
+                // Sync to Protocol Log
+                const pEntry = document.createElement('div');
+                pEntry.innerHTML = `<span style="color: #6d6d6d;">[${new Date().toLocaleTimeString()}]</span> <span style="color: #4ade80;">[PHASE]</span> ${data.status || data.phase}`;
+                protocolLog.appendChild(pEntry);
+            } else if (data.phase === 'audit_result') {
+                const entry = document.createElement('div');
+                const color = data.decision === 'EXPAND' ? '#f59e0b' : '#10b981';
+                entry.style.padding = "4px 0";
+                entry.style.color = "#e2e8f0";
+                entry.innerHTML = `> AUDIT: <span style="color: ${color}; font-weight: bold;">${data.decision}</span> - ${data.reason}`;
+                logs.appendChild(entry);
+                logs.scrollTop = logs.scrollHeight;
+
+                // Protocol Detail
+                const pEntry = document.createElement('div');
+                pEntry.innerHTML = `<span style="color: #6d6d6d;">[${new Date().toLocaleTimeString()}]</span> <span style="color: #6366f1;">[AUDIT_TRACE]</span> Full Audit Model Output: <pre style="font-size: 0.75rem; color: #cbd5e1; background: #1e1e1e; padding: 10px; margin: 10px 0; border-radius: 5px; overflow-x: auto;">${JSON.stringify(data, null, 2)}</pre>`;
+                protocolLog.appendChild(pEntry);
+            } else if (data.phase === 'log') {
+                const pEntry = document.createElement('div');
+                pEntry.innerHTML = `<span style="color: #6d6d6d;">[${new Date().toLocaleTimeString()}]</span> <span style="color: #94a3b8;">[DEBUG]</span> ${data.message} ${data.data ? `<pre style="font-size: 0.75rem; color: #cbd5e1; background: #1e1e1e; padding: 10px; margin: 10px 0; border-radius: 5px; overflow-x: auto;">${JSON.stringify(data.data, null, 2)}</pre>` : ''}`;
+                protocolLog.appendChild(pEntry);
+            } else if (data.phase === 'complete') {
+                synthesisText.innerHTML = marked.parse(data.content);
+                document.getElementById('follow-up-ui').style.display = 'flex';
+                document.getElementById('research-trace').style.opacity = '0.6';
+
+                const pEntry = document.createElement('div');
+                pEntry.innerHTML = `<span style="color: #6d6d6d;">[${new Date().toLocaleTimeString()}]</span> <span style="color: #4ade80;">[SUCCESS]</span> Protocol complete with N=${data.n}`;
+                protocolLog.appendChild(pEntry);
+            } else if (data.phase === 'error') {
+                synthesisText.innerHTML = `<span style="color: #ef4444;">Error: ${data.content}</span>`;
+            }
+            if (protocolLog) protocolLog.scrollTop = protocolLog.scrollHeight;
         }
 
         function renderResults(data) {

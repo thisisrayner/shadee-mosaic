@@ -24,11 +24,13 @@ CREATE EXTENSION IF NOT EXISTS vector;
 -- This enables RPC calls from our Python SDK to perform semantic search
 -- NOTE: We drop first because PostgreSQL doesn't allow changing return types with CREATE OR REPLACE
 DROP FUNCTION IF EXISTS match_social_posts(vector, float, int);
+DROP FUNCTION IF EXISTS match_social_posts(vector, float, int, text);
 
 CREATE OR REPLACE FUNCTION match_social_posts (
   query_embedding vector(768),
   match_threshold float,
-  match_count int
+  match_count int,
+  filter_region text DEFAULT NULL
 )
 RETURNS TABLE (
   id uuid,
@@ -36,6 +38,7 @@ RETURNS TABLE (
   content text,
   platform text,
   post_dt timestamptz,
+  region text,
   bucket_id text,
   ai_bucket_id text,
   ai_explanation text,
@@ -51,12 +54,18 @@ BEGIN
     social_posts.content,
     social_posts.platform,
     social_posts.post_dt,
+    social_posts.region,
     social_posts.bucket_id,
     social_posts.ai_bucket_id,
     social_posts.ai_explanation,
     1 - (social_posts.embedding <=> query_embedding) AS similarity
   FROM social_posts
   WHERE 1 - (social_posts.embedding <=> query_embedding) > match_threshold
+  AND (
+    filter_region IS NULL 
+    OR (filter_region = 'Singapore' AND social_posts.region IN ('Singapore', 'SG'))
+    OR (social_posts.region = filter_region)
+  )
   ORDER BY similarity DESC
   LIMIT match_count;
 END;

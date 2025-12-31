@@ -1,11 +1,13 @@
 import os
 import sys
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 from typing import List, Optional
+import json
+import asyncio
 
 # Add project root to sys.path for robust imports
 root_path = Path(__file__).resolve().parent.parent.parent
@@ -24,17 +26,22 @@ class SearchQuery(BaseModel):
     limit: Optional[int] = 12
     threshold: Optional[float] = 0.35
     ai_only: Optional[bool] = False
+    sg_only: Optional[bool] = False
 
 class SearchResult(BaseModel):
     id: str
-    similarity: float
+    similarity: Optional[float] = 0.0
     platform: str
     content_scrubbed: Optional[str] = None
     content: Optional[str] = None
     post_dt: Optional[str] = None
-    bucket_id: Optional[str] = None
     ai_bucket_id: Optional[str] = None
     ai_explanation: Optional[str] = None
+
+class SearchResponse(BaseModel):
+    results: List[SearchResult]
+    suggestion: Optional[str] = None
+    trend_keyword: Optional[str] = None
 
 class SummarizeRequest(BaseModel):
     results: List[SearchResult]
@@ -67,45 +74,22 @@ async def debug_db():
     except Exception as e:
         return {"status": "error", "error": str(e)}
 
-@app.post("/api/summarize")
-async def summarize_results(req: SummarizeRequest):
-    """Generate a clinical synthesis of the search results."""
-    try:
-        if not req.results:
-            return {"synthesis": "No narratives found to synthesize."}
-        
-        # Build context from results
-        context = ""
-        for i, r in enumerate(req.results):
-            content = r.content_scrubbed or r.content or "No content"
-            classification = "LLM Tier 2" if r.ai_explanation else "Regex Tier 1"
-            context += f"Narrative {i+1} [{classification}]: {content}\n\n"
+class ResearchRequest(BaseModel):
+    query: str
+    sg_only: Optional[bool] = False
 
-        prompt = f"""
-        You are a trained therapy specialist in youth mental health for Project Shadee. 
-        User Query: "{req.query}"
-        
-        Based on the provided {len(req.results)} narratives, please provide a high-level clinical synthesis.
-        Identify:
-        1. Core emotional themes or stressors.
-        2. Common patterns in the youth narratives.
-        3. Potential intervention focal points.
-        
-        Be concise, professional, and empathetic. Mention if the data contains baseline Regex classifications vs high-fidelity AI tier analysis.
-        
-        Narratives:
-        {context}
-        """
-        
-        import google.generativeai as genai
-        genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
-        model = genai.GenerativeModel('gemini-2.0-flash-exp')
-        response = model.generate_content(prompt)
-        
-        return {"synthesis": response.text}
-    except Exception as e:
-        print(f"Summarization Error: {e}")
-        return {"synthesis": "Error generating synthesis. Please try again later."}
+@app.post("/api/research")
+async def conduct_research(req: ResearchRequest):
+    """Conducts iterative research with real-time status updates."""
+    async def event_generator():
+        try:
+            async for update in search_engine.research_flow(req.query, region="Singapore" if req.sg_only else None):
+                # Format as SSE (data: <json>\n\n)
+                yield f"data: {json.dumps(update)}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'phase': 'error', 'content': str(e)})}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @app.post("/api/follow-up")
 async def follow_up(req: FollowUpRequest):
@@ -132,26 +116,69 @@ async def follow_up(req: FollowUpRequest):
         print(f"Follow-up Error: {e}")
         return {"answer": "Error answering follow-up. Please try again."}
 
-@app.post("/api/search", response_model=List[SearchResult])
-async def perform_search(search_query: SearchQuery):
+@app.get("/api/stats")
+async def get_stats(ai_only: bool = False, sg_only: bool = False):
+    """Get statistics of the internal brain with filters."""
     try:
+        region = "Singapore" if sg_only else None
+        count = search_engine.get_total_count(ai_only=ai_only, region=region)
+        return {"total_posts": count}
+    except Exception as e:
+        print(f"Stats Error: {e}")
+        return {"total_posts": 0}
+
+@app.post("/api/search", response_model=SearchResponse)
+async def perform_search(search_query: SearchQuery):
+    """Main search endpoint with trend mapping and suggestions."""
+    try:
+        region = "Singapore" if search_query.sg_only else None
+        
+        # 1. Fetch narratives
         results = search_engine.search(
             query=search_query.query,
             threshold=search_query.threshold,
-            limit=search_query.limit * 2 if search_query.ai_only else search_query.limit
+            limit=search_query.limit * 2 if search_query.ai_only else search_query.limit,
+            region=region
         )
-        if not results:
-            return []
         
         # Apply AI-only filter if requested
-        if search_query.ai_only:
-            results = [r for r in results if r.get('ai_explanation')]
+        if search_query.ai_only and results:
+            results = [r for r in results if isinstance(r, dict) and r.get('ai_explanation')]
             results = results[:search_query.limit]
-            
-        return results
+        elif results:
+            results = results[:search_query.limit]
+
+        # 2. Add Trend Context / Suggestions
+        suggestion = None
+        trend_keyword = None
+        if results is None or len(results) < 5:
+            trend_keyword = search_engine.map_query_to_trend(search_query.query)
+            if trend_keyword:
+                loc = "Singapore" if search_query.sg_only else "the world"
+                suggestion = f"Narrative evidence for '{search_query.query}' is sparse, but Google searches for '{trend_keyword}' in {loc} are showing activity. Explore broader trends?"
+
+        return {
+            "results": results or [],
+            "suggestion": suggestion,
+            "trend_keyword": trend_keyword
+        }
     except Exception as e:
-        print(f"CRITICAL API ERROR: {type(e).__name__}: {e}")
-        raise HTTPException(status_code=500, detail="Internal Search Error")
+        print(f"CRITICAL API ERROR: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/trends")
+async def get_trends(sg_only: bool = False):
+    """Get summarized trend data for the dashboard chart."""
+    try:
+        region = "Singapore" if sg_only else "Global"
+        data = search_engine.get_trends_data(region=region)
+        # Fallback to Global if SG is empty to show something useful
+        if not data and sg_only:
+            data = search_engine.get_trends_data(region="Global")
+        return {"data": data}
+    except Exception as e:
+        print(f"Trends API Error: {e}")
+        return {"data": []}
 
 # Serve Static Files
 app.mount("/", StaticFiles(directory="src/ai/static", html=True), name="static")
