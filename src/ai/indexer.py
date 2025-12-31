@@ -18,7 +18,11 @@ class VectorIndexer:
         self.model = "models/text-embedding-004"
 
     def get_embedding(self, text: str):
-        """Generate embedding using Gemini text-embedding-004."""
+        """
+        Generates a 768-dimensional vector embedding for the given text.
+        
+        Uses Gemini's 'text-embedding-004' model configured for 'retrieval_document'.
+        """
         if not text:
             return None
         try:

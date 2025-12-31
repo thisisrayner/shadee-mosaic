@@ -869,6 +869,7 @@
 
         let currentResults = [];
         let currentSynthesis = "";
+        let currentSessionId = "";
 
         aiOnlyToggle.addEventListener('change', () => {
             toggleLabel.textContent = aiOnlyToggle.checked ? "Verified posts only" : "Include all posts";
@@ -1001,6 +1002,10 @@
             resultsContainer.innerHTML = '';
             synthesisText.innerHTML = 'Generating insights...';
             document.getElementById('follow-up-ui').style.display = 'none';
+
+            // Generate unique session ID for this research cycle
+            currentSessionId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString();
+
             switchTab('synthesis');
 
             try {
@@ -1131,7 +1136,11 @@
                 const response = await fetch('/api/research', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query, sg_only: sgOnly })
+                    body: JSON.stringify({
+                        query,
+                        sg_only: sgOnly,
+                        session_id: currentSessionId
+                    })
                 });
 
                 const reader = response.body.getReader();
@@ -1260,7 +1269,8 @@
                     body: JSON.stringify({
                         query: q,
                         context: currentSynthesis,
-                        results: currentResults
+                        results: currentResults,
+                        session_id: currentSessionId
                     })
                 });
 

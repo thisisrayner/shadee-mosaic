@@ -6,6 +6,12 @@ from dotenv import load_dotenv
 from scrubber import PIIScrubber # Reusing our Phase 1 scrubber
 
 class BulkAnonymizer:
+    """
+    [⚠️ GUARDIAN WARNING]: NON-DESTRUCTIVE SHADOW PATTERN.
+    This class MUST ONLY write to 'content_scrubbed'.
+    NEVER overwrite the original 'content' column. 
+    The 'content' column is the absolute source of truth for raw narratives.
+    """
     def __init__(self, batch_size=50):
         load_dotenv()
         url = os.getenv("SUPABASE_URL")

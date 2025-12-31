@@ -15,7 +15,7 @@ We rely on the following from your pipeline:
 3.  **Timestamp Alignment:** The `post_dt` field is critical for our temporal analysis and for the "Youth Specialist" persona to contextualize seasonal or pandemic-related trends.
 
 ## 3. Recommended Ingestion Enhancements
-To support our move toward **Clinical Fidelity (Phase 5)**, the following metadata enhancements in `social-listen` would be high-value:
+To support our move toward **Visual Discovery (Phase 5)**, the following metadata enhancements in `social-listen` would be high-value:
 
 - **Full Thread Context:** If possible, pulling parent/child comments for Reddit posts increases the signal-to-noise ratio for our causal mapping.
 - **Platform-Specific "Vitals":** Capturing engagement metrics (upvotes, views) helps us prioritize high-impact narratives for synthesis.
@@ -23,7 +23,7 @@ To support our move toward **Clinical Fidelity (Phase 5)**, the following metada
 
 ## 4. The Funnel Flow
 1.  **Ingestion Agent (`social-listen`)**: Fetches raw text -> Regex Triage -> Supabase `social_posts`.
-2.  **Analysis Agent (`shadee-mosaic`)**: `content_scrubbed` (Anonymization) -> `vector_embedding` -> Clinical Synthesis.
+2.  **Analysis Agent (`shadee-mosaic`)**: `content_scrubbed` (Anonymization) -> `vector_embedding` -> **Dynamic Research flow** -> Clinical Synthesis.
 
 ## 5. Shared Schema Notes
 - **Table:** `social_posts`

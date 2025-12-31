@@ -51,6 +51,7 @@ class FollowUpRequest(BaseModel):
     query: str
     context: str
     results: List[SearchResult]
+    session_id: str
 
 @app.get("/api/debug-db")
 async def debug_db():
@@ -77,13 +78,23 @@ async def debug_db():
 class ResearchRequest(BaseModel):
     query: str
     sg_only: Optional[bool] = False
+    session_id: Optional[str] = None
 
 @app.post("/api/research")
 async def conduct_research(req: ResearchRequest):
-    """Conducts iterative research with real-time status updates."""
+    """
+    Conducts an iterative research session with real-time status updates via SSE.
+    
+    This endpoint initiates the Dynamic Research Flow, performing multi-stage 
+    sampling and auditing, and logging the final results for analytical tracking.
+    """
     async def event_generator():
         try:
-            async for update in search_engine.research_flow(req.query, region="Singapore" if req.sg_only else None):
+            async for update in search_engine.research_flow(
+                req.query, 
+                region="Singapore" if req.sg_only else None,
+                session_id=req.session_id
+            ):
                 # Format as SSE (data: <json>\n\n)
                 yield f"data: {json.dumps(update)}\n\n"
         except Exception as e:
@@ -93,7 +104,11 @@ async def conduct_research(req: ResearchRequest):
 
 @app.post("/api/follow-up")
 async def follow_up(req: FollowUpRequest):
-    """Answer a one-turn follow-up question based on the synthesis."""
+    """
+    Answers a one-turn follow-up question based on the research synthesis context.
+    
+    The question and AI answer are logged to the database under the current session ID.
+    """
     try:
         prompt = f"""
         You are a trained therapy specialist in youth mental health. You just provided a synthesis of narratives for the query "{req.query}".
@@ -111,7 +126,19 @@ async def follow_up(req: FollowUpRequest):
         model = genai.GenerativeModel('gemini-2.0-flash-exp')
         response = model.generate_content(prompt)
         
-        return {"answer": response.text}
+        answer = response.text
+        
+        # Log follow-up
+        if req.session_id:
+            await search_engine.log_research_query(
+                session_id=req.session_id,
+                query=req.query,
+                query_type="followup",
+                response=answer,
+                metadata={"has_context": True}
+            )
+            
+        return {"answer": answer}
     except Exception as e:
         print(f"Follow-up Error: {e}")
         return {"answer": "Error answering follow-up. Please try again."}

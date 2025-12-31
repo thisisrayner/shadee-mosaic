@@ -50,6 +50,6 @@ The `social_posts` table already contains several "Shadow Tracking" columns:
 - `is_anonymized`
 - `verified_bucket_id`
 
-## Recommendations
-1. **Bulk Anonymization:** Only a fraction of the data appears to be marked as anonymized. We should run the `src/data/scrubber.py` logic in a bulk job.
-2. **Backfill Labels:** Many records might missing high-confidence AI labels.
+## Recommendations (MIGRATED TO PHASE 5)
+1. **Visual Discovery:** Implement the PCA-based "Star Map" to allow for spatial discovery of thematic clusters.
+2. **Clinical Audit:** Use the `research_logs` table to identify gaps in AI reasoning or narrative coverage.

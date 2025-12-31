@@ -3,17 +3,21 @@
 **Audience:** Stakeholders, Clinical Experts, AI Agents
 
 ## 1. Executive Summary
-Project MosAIc is currently a sophisticated "Clinical Discovery" tool. It uses semantic search and AI synthesis to identify themes in youth mental health narratives. This document outlines the path from **Thematic Discovery** to **Clinical Fidelity**—shifting from general patterns to actionable, diagnostic-grade insights.
+Project MosAIc has evolved into a high-fidelity **Dynamic Research Engine**. It moves beyond simple retrieval to perform recursive sampling with AI-led thematic saturation audits. This document outlines the path from **Thematic Discovery** to **Clinical Fidelity**—shifting from general patterns to actionable, diagnostic-grade insights.
 
 ---
 
-## 2. Current Architecture
+## 2. Current Architecture (Phases 1-4)
 ### Pipeline Overview
 1.  **Ingestion (The "Top-End"):** Automated daily scrapes of Reddit (PRAW), YouTube (Google API), and Tumblr via GitHub Actions in the `social-listen` repository.
-2.  **Privacy Layer (Shadow Write):** PII is scrubbed, preserving clinical context in `content_scrubbed`.
+2.  **Privacy Layer (Shadow Write):** PII is non-destructively scrubbed. Raw data is preserved in `content` while `content_scrubbed` stores anonymized versions.
 3.  **Vectorization:** `text-embedding-004` generates high-dimensional vectors for semantic context.
-4.  **Retrieval (RAG):** Cosine Similarity search pulls the top 12 most relevant narratives.
-5.  **Intelligence Layer:** Gemini 2.0 Flash (Youth Mental Health Specialist Persona) synthesizes the retrieved evidence.
+4.  **Dynamic Research (Recursive RAG):** 
+    - **Stage 1 (N=25):** Initial thematic scan and saturation audit.
+    - **Stage 2 (N=120):** Secondary audit if thematic variance is high.
+    - **Stage 3 (N=500):** Final expansion for categorical depth.
+5.  **Intelligence Layer:** Gemini 3.0 Flash Preview (Senior Youth Mental Health Researcher Persona) synthesizes the finalized dataset into a Markdown research report.
+6.  **Audit Trail:** Every step is logged in a "Protocol Trace" UI and a `research_logs` table for analytical audibility.
 
 ### 2.5 Top-End Funnel Analysis (Social-Listen)
 The ingestion pipeline in `social-listen` provides the following foundational metadata and constraints:

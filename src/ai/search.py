@@ -61,7 +61,15 @@ class SemanticSearch:
             print(f"Search error: {e}")
 
     def get_total_count(self, ai_only: bool = False, region: str = None):
-        """Fetch total count of narratives according to specific toggle logic."""
+        """
+        [⚠️ GUARDIAN WARNING]: DATA COUNT LOGIC IS FRAGILE.
+        This function implements 4 specific clinical rules for the banner count.
+        1. IF Verified Toggle ON -> ONLY count rows with ai_bucket_id.
+        2. IF Singapore Toggle ON -> Count 'Singapore' OR 'SG' (case-insensitive).
+        3. Efficiency: Uses count='planned' (fast) with an exact fallback for accuracy.
+        4. Toggles are additive (AND logic).
+        DO NOT refactor to a generic filter without maintaining these specific rules.
+        """
         try:
             # Use count='planned' for fast estimation on large social_posts table
             query = self.supabase.table('social_posts').select('id', count='planned').limit(1)
@@ -137,10 +145,40 @@ class SemanticSearch:
             return []
 
 
-    async def research_flow(self, query: str, region: str = None):
+    async def log_research_query(self, session_id: str, query: str, query_type: str, response: str = None, n: int = None, metadata: dict = None):
         """
-        An asynchronous generator that performs the Dynamic N research process.
-        Yields status updates and finally the synthesis.
+        Logs a research query and its corresponding AI response to the database.
+        
+        Args:
+            session_id: Unique identifier for the research session (links primary and follow-up queries).
+            query: The text of the user query.
+            query_type: 'primary' or 'followup'.
+            response: The AI-generated synthesis or answer.
+            n: Number of narratives used in the synthesis.
+            metadata: Additional context (e.g., model version, region).
+        """
+        try:
+            data = {
+                "session_id": session_id,
+                "query_text": query,
+                "query_type": query_type,
+                "response_text": response,
+                "n_used": n,
+                "metadata": metadata or {}
+            }
+            # Remove None values to use DB defaults
+            cleaned_data = {k: v for k, v in data.items() if v is not None}
+            self.supabase.table("research_logs").insert(cleaned_data).execute()
+        except Exception as e:
+            print(f"Logging Error: {e}")
+
+    async def research_flow(self, query: str, region: str = None, session_id: str = None):
+        """
+        [⚠️ GUARDIAN WARNING]: PROTOCOL ORCHESTRATION IS FRAGILE.
+        This generator is tightly coupled to the 'Protocol Trace' frontend tab.
+        - EVERY 'yield' is parsed by name in handleResearchUpdate (index.html).
+        - Phases: 'sampling', 'audit', 'audit_result', 'log', 'synthesis', 'complete', 'error'.
+        - Changing phase names or payload structures will break the clinical audit UI.
         """
         import json
         
@@ -272,14 +310,37 @@ class SemanticSearch:
             # Using Gemini 3 Flash for the final deep synthesis
             model = genai.GenerativeModel('gemini-3-flash-preview')
             response = await model.generate_content_async(synthesis_prompt)
-            yield {"phase": "complete", "content": response.text, "n": len(final_batch)}
+            final_text = response.text
+            yield {"phase": "complete", "content": final_text, "n": len(final_batch)}
+            
+            # Async logging
+            if session_id:
+                await self.log_research_query(
+                    session_id=session_id,
+                    query=query,
+                    query_type="primary",
+                    response=final_text,
+                    n=len(final_batch),
+                    metadata={"region": region, "model": "gemini-3-flash-preview"}
+                )
         except Exception as e:
             # Fallback to 2.0 if 3.0 is not yet available in this environment
             print(f"Gemini 3 Synthesis Error, falling back to 2.0: {e}")
             try:
                 model_fb = genai.GenerativeModel('gemini-2.0-flash-exp')
                 response_fb = await model_fb.generate_content_async(synthesis_prompt)
-                yield {"phase": "complete", "content": response_fb.text, "n": len(final_batch)}
+                final_text_fb = response_fb.text
+                yield {"phase": "complete", "content": final_text_fb, "n": len(final_batch)}
+                
+                if session_id:
+                    await self.log_research_query(
+                        session_id=session_id,
+                        query=query,
+                        query_type="primary",
+                        response=final_text_fb,
+                        n=len(final_batch),
+                        metadata={"region": region, "model": "gemini-2.0-flash-exp", "fallback": True}
+                    )
             except Exception as e2:
                 yield {"phase": "error", "content": f"Synthesis Error: {str(e2)}"}
 

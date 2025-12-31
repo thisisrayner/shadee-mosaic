@@ -36,16 +36,21 @@ Visit **[http://localhost:8000](http://localhost:8000)** to start exploring.
 ---
 
 ## ✨ Key Features
-- **Semantic Narrative Search:** Search by "vibes" or themes (e.g. "academic stress") instead of just keywords.
-- **PII Shadow Strategy:** Displays high-fidelity anonymized narratives (`content_scrubbed`) for safety.
-- **Deep-Dive Modal:** Click any result to see the original content, AI Bucket classification, and the AI's detailed explanation for the flagging.
-- **Glassmorphism UI:** A premium, high-performance web interface designed for stakeholder presentations.
+- **Dynamic Research Engine (Phase 3/4):** Recursive sampling (N=25 -> N=120 -> N=500) with AI-led thematic saturation audits.
+- **Protocol Trace (Clinical Transparency):** A dedicated Git-style log tab providing 100% visibility into backend research protocols, semantic thresholds, and JSON reasoning.
+- **Gemini 3.0 Integration:** Final synthesis powered by `gemini-3-flash-preview` for high-fidelity clinical reasoning.
+- **Research Query Logging:** Automatic tracking of all user questions and AI responses in a structured `research_logs` table for analytical lineage.
+- **Atmosphere Pulse:** Real-time Google Trends visualization for mental health keywords (Anxiety, Depression, etc.).
+- **Semantic Narrative Search:** Search by "vibes" or themes instead of just keywords.
+- **Deep-Dive Modal:** Clinical triage view with original content (if requested), AI Bucket classification, and detailed flagging explanations.
+- **Glassmorphism UI:** A premium, interactive interface designed for high-end stakeholder presentations.
 
 ## 📂 Project Structure
-- `src/ai/app.py`: FastAPI backend and API layer.
-- `src/ai/static/index.html`: Vanilla JS/CSS frontend with Glassmorphism design.
-- `src/ai/search.py`: Core RAG retrieval logic using Gemini embeddings.
-- `scripts/phase2_schema_update.sql`: Database migration for vector-search and metadata support.
+- `src/ai/app.py`: FastAPI backend, SSE streaming for research flow, and logging endpoints.
+- `src/ai/search.py`: Core logic for Vector Search, Recursive Audits, and Gemini 3 Synthesis.
+- `src/ai/static/index.html`: Fully reactive Glassmorphism frontend with Protocol Trace and Trends components.
+- `scripts/research_logs_schema.sql`: Schema for user query and AI response tracking.
+- `scripts/phase2_schema_update.sql`: Base database migration for vector-search and metadata support.
 
 ---
 
