@@ -48,7 +48,8 @@ Visit **[http://localhost:8000](http://localhost:8000)** to start exploring.
 ## 📂 Project Structure
 - `src/ai/app.py`: FastAPI backend, SSE streaming for research flow, and logging endpoints.
 - `src/ai/search.py`: Core logic for Vector Search, Recursive Audits, and Gemini 3 Synthesis.
-- `src/ai/static/index.html`: Fully reactive Glassmorphism frontend with Protocol Trace and Trends components.
+- `src/ai/static/index.html`: Fully reactive Glassmorphism frontend (entry point).
+- `src/ai/static/js/modules/`: Modular JavaScript logic (`api.js`, `ui.js`, `charts.js`, `research.js`, `main.js`).
 - `scripts/research_logs_schema.sql`: Schema for user query and AI response tracking.
 - `scripts/phase2_schema_update.sql`: Base database migration for vector-search and metadata support.
 
