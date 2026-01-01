@@ -156,17 +156,11 @@ function init() {
     });
 
     // Toggle Labels
-    aiOnlyToggle.addEventListener('change', () => {
-        toggleLabel.textContent = aiOnlyToggle.checked ? "Verified posts only" : "Include all posts";
-    });
     sgOnlyToggle.addEventListener('change', () => {
-        sgToggleLabel.textContent = sgOnlyToggle.checked ? "SG Posts only" : "Whole DB";
         updateTrends(sgOnlyToggle.checked);
     });
 
-    // Set initial labels
-    toggleLabel.textContent = aiOnlyToggle.checked ? "Verified posts only" : "Include all posts";
-    sgToggleLabel.textContent = sgOnlyToggle.checked ? "SG Posts only" : "Whole DB";
+    // Set initial labels (Static now, handled in HTML)
 
     // Follow-Up Interactions
     document.querySelector('#follow-up-ui button').addEventListener('click', () => {
